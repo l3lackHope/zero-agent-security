@@ -1,0 +1,28 @@
+name: Request a ZERO pilot scan
+description: Submit an agent/tool workflow for an early-access adversarial scan
+title: "[PILOT] "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for testing ZERO. Do not include secrets, credentials, customer data, or private keys.
+  - type: textarea
+    id: workflow
+    attributes:
+      label: What does your agent do?
+      description: Describe the agent, MCP servers/APIs/tools, and consequential actions.
+    validations:
+      required: true
+  - type: textarea
+    id: forbidden
+    attributes:
+      label: What must never happen?
+      description: Examples: spend above a limit, leak private data, bypass approval, modify production.
+    validations:
+      required: true
+  - type: textarea
+    id: schemas
+    attributes:
+      label: Public/sanitized schemas or tool definitions
+      description: Paste or link only non-sensitive MCP/OpenAPI/tool definitions.
