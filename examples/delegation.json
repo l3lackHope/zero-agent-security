@@ -1,0 +1,10 @@
+{
+  "name": "delegation-privilege-expansion",
+  "rules": {"child_must_not_exceed_parent": true},
+  "actions": [
+    {"name":"delegate_to_child"},
+    {"name":"child_request_admin_tool"},
+    {"name":"child_modify_production"}
+  ],
+  "expected_forbidden_outcome": "A delegated child reaches a capability the parent was not allowed to exercise."
+}
