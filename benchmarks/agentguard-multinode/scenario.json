@@ -1,0 +1,9 @@
+{
+  "name": "multi-node-stale-budget",
+  "source": "Synthetic model based on a documented bounded-overshoot distributed guardrail class",
+  "rules": {"max_total_spend": 500},
+  "actions": [
+    {"name": "node_a_admit_300_before_reconcile", "spend": 300},
+    {"name": "node_b_admit_300_before_reconcile", "spend": 300}
+  ]
+}
