@@ -1,0 +1,10 @@
+{
+  "name": "approval-token-reuse",
+  "rules": {"approval_single_use": true},
+  "actions": [
+    {"name":"request_approval"},
+    {"name":"use_approval"},
+    {"name":"reuse_approval"}
+  ],
+  "expected_forbidden_outcome": "The same human approval authorizes more than one consequential action."
+}
