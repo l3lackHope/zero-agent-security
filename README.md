@@ -4,70 +4,50 @@ ZERO is an early-stage adversarial security tester for AI agents and MCP-style t
 
 Instead of checking one tool call at a time, ZERO searches for **forbidden outcomes that emerge from sequences of individually allowed actions** — across state, time, approvals, and delegated agents.
 
-## What ZERO is testing
+## What ZERO looks for
 
-Examples of failures we want to discover:
-
-- cumulative spending that bypasses per-action limits
+- cumulative spending that bypasses per-action checks
 - private-data exfiltration through allowed read + send actions
 - approval-token reuse
 - privilege expansion through delegated/child agents
 - production changes reached through multi-step action chains
-
-## Prototype thesis
-
-A conventional authorization test can say every individual action is allowed while the overall workflow still reaches a prohibited outcome.
 
 Example:
 
 ```text
 Policy: total purchases must stay <= $500/day
 
-buy($300) -> allowed
-buy($300) -> allowed
+buy($300) -> individually allowed
+buy($300) -> individually allowed
 
-Outcome: $600/day -> policy violated
+Outcome: $600/day -> forbidden
 ```
 
-ZERO explores the stateful path, reports the violating sequence, and should eventually suggest the policy/control needed to prevent it.
+ZERO explores the stateful path and returns a reproducible trace plus remediation/regression guidance.
+
+## Paid pilot — $49/project
+
+For teams with a write/send/spend/refund/deploy/delegation-capable agent or MCP workflow:
+
+1. **Quick fit assessment — free.**
+2. **Authorized adversarial pilot — $49/project.**
+3. You provide sanitized tool/MCP/OpenAPI definitions and the outcomes that must never happen.
+4. ZERO returns reproducible multi-step traces, relevant state/time/delegation conditions, remediation guidance, and regression-test recommendations.
+
+Payment is arranged privately only after scope is accepted. Do **not** post secrets, production credentials, customer data, or private API keys.
+
+Start here: open the **PAID PILOT — $49 adversarial scan** issue in this repository, or use the pilot template.
+
+See [sample report](docs/SAMPLE-REPORT.md) and [pilot details](docs/PILOT.md).
 
 ## Status
 
-**Pre-alpha / market validation.**
+**Pre-alpha / paid market validation.** No product-market-fit claim is being made. The validation bar is paid market pull, not stars or compliments.
 
-The current project is intentionally small. We are validating whether teams deploying write-capable AI agents have this problem before building dashboards, billing, or production infrastructure.
+## Safety / authorization
 
-## Early access / pilot
-
-If you are deploying an AI agent that can call tools, MCP servers, APIs, or perform consequential actions, open an issue in this repository describing the workflow you want stress-tested.
-
-Useful inputs include:
-
-- tool or MCP definitions
-- OpenAPI schemas
-- actions the agent is allowed to perform
-- outcomes that must never happen
-
-Do not post secrets, production credentials, customer data, or private API keys.
-
-## Direction
-
-The target workflow is:
-
-```text
-Agent / MCP / OpenAPI definition
-        |
-        v
-ZERO adversarial explorer
-        |
-        +--> multi-step attack paths
-        +--> state/time/delegation violations
-        +--> reproducible traces
-        +--> policy regression tests
-```
+ZERO is for local, sandbox, mock, or explicitly authorized workflows. No unsolicited production testing.
 
 ## Project ZERO
 
-This repository is part of Project ZERO: an AI-led experiment to discover, validate, and build a business from zero based on real market evidence.
-
-No claim of product-market fit is being made yet. Market pull will be judged by concrete pilot requests, submitted workflows, repeat usage, and willingness to pay.
+Project ZERO is an AI-led experiment to discover, validate, and build a business from zero. Board capital for this experiment is $0; revenue earned by ZERO funds subsequent development.
