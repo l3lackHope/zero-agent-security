@@ -1,0 +1,13 @@
+{
+  "name": "purchasing-and-data-demo",
+  "rules": {
+    "max_total_spend": 500,
+    "forbid_private_external": true
+  },
+  "actions": [
+    {"name": "buy_300", "spend": 300},
+    {"name": "buy_100", "spend": 100},
+    {"name": "read_private", "reads_private": true},
+    {"name": "send_external", "sends_external": true}
+  ]
+}
