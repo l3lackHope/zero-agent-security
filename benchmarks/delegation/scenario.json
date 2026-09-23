@@ -1,0 +1,13 @@
+{
+  "name": "delegated-agent-cumulative-budget",
+  "source": "Synthetic benchmark informed by public agent delegation/payment systems",
+  "rules": {
+    "max_total_spend": 500
+  },
+  "actions": [
+    {"name": "child_a_pay_300", "spend": 300},
+    {"name": "child_b_pay_300", "spend": 300},
+    {"name": "child_a_pay_100", "spend": 100},
+    {"name": "child_b_pay_100", "spend": 100}
+  ]
+}
