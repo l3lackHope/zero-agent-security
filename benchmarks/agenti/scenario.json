@@ -1,0 +1,17 @@
+{
+  "name": "agenti-mcp-mock-cumulative-spend",
+  "source": "Public Agenti MCP pay interface; local mock only",
+  "rules": {
+    "max_total_spend": 500
+  },
+  "actions": [
+    {
+      "name": "pay_mock_300",
+      "spend": 300
+    },
+    {
+      "name": "pay_mock_100",
+      "spend": 100
+    }
+  ]
+}
