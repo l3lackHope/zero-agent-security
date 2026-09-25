@@ -1,0 +1,52 @@
+{
+  "name": "Manufacturing OEE Pilot - Synthetic Proof",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "manufacturing-oee-pilot",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook",
+      "name": "Production Data Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-620, 0],
+      "webhookId": "manufacturing-oee-pilot"
+    },
+    {
+      "parameters": {
+        "jsCode": "const p=$json.body??$json; const req=['event_id','line_id','planned_minutes','run_minutes','ideal_cycle_seconds','total_units','good_units']; const missing=req.filter(k=>p[k]===undefined||p[k]===null||p[k]===''); if(missing.length) return [{json:{ok:false,error:'missing_field',missing}}]; const nums=['planned_minutes','run_minutes','ideal_cycle_seconds','total_units']; if(nums.some(k=>Number(p[k])<=0)||Number(p.good_units)<0||Number(p.good_units)>Number(p.total_units)) return [{json:{ok:false,error:'invalid_numeric'}}]; const d=$getWorkflowStaticData('global'); d.seen=d.seen||{}; const eventId=String(p.event_id); if(d.seen[eventId]) return [{json:{ok:true,duplicate:true,event_id:eventId,status:'duplicate_ignored',alert:false}}]; d.seen[eventId]=new Date().toISOString(); const availability=Math.min(1,Number(p.run_minutes)/Number(p.planned_minutes)); const performance=Math.min(1,((Number(p.ideal_cycle_seconds)*Number(p.total_units))/60)/Number(p.run_minutes)); const quality=Math.min(1,Number(p.good_units)/Number(p.total_units)); const oee=Math.round((availability*performance*quality*100)*100)/100; const status=oee<65?'critical':(oee<85?'warning':'healthy'); return [{json:{ok:true,duplicate:false,event_id:eventId,line_id:String(p.line_id),oee_pct:oee,status,alert:status==='critical'}}];"
+      },
+      "id": "code",
+      "name": "Validate + Calculate OEE + Dedupe",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-350, 0]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "respond",
+      "name": "Return Report Decision",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [-80, 0]
+    }
+  ],
+  "connections": {
+    "Production Data Webhook": {
+      "main": [[{"node":"Validate + Calculate OEE + Dedupe","type":"main","index":0}]]
+    },
+    "Validate + Calculate OEE + Dedupe": {
+      "main": [[{"node":"Return Report Decision","type":"main","index":0}]]
+    }
+  },
+  "pinData": {},
+  "settings": {"executionOrder":"v1"},
+  "active": false
+}
