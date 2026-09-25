@@ -1,0 +1,66 @@
+{
+  "name": "FRED Paid Test - Credential-Free Reference",
+  "nodes": [
+    {
+      "parameters": {"httpMethod":"POST","path":"fred-paid-test-proof","responseMode":"responseNode","options":{}},
+      "id":"webhook","name":"Webhook","type":"n8n-nodes-base.webhook","typeVersion":2,"position":[-760,0],
+      "webhookId":"fred-paid-test-proof"
+    },
+    {
+      "parameters":{"jsCode":"const p=$json.body??$json; const required=['event_id','name','email']; const missing=required.filter(k=>p[k]===undefined||p[k]===null||p[k]===''); const emailOk=typeof p.email==='string' && /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(p.email); return [{json:{valid:missing.length===0&&emailOk,missing,payload:p}}];"},
+      "id":"validate","name":"Validate Input","type":"n8n-nodes-base.code","typeVersion":2,"position":[-540,0]
+    },
+    {
+      "parameters":{"conditions":{"options":{"caseSensitive":true,"typeValidation":"strict"},"conditions":[{"leftValue":"={{$json.valid}}","rightValue":true,"operator":{"type":"boolean","operation":"true","singleValue":true}}],"combinator":"and"},"options":{}},
+      "id":"ifvalid","name":"Valid?","type":"n8n-nodes-base.if","typeVersion":2.2,"position":[-320,0]
+    },
+    {
+      "parameters":{"respondWith":"json","responseBody":"={{ {status:'rejected',reason:'validation_failed',missing:$json.missing} }}","options":{"responseCode":400}},
+      "id":"bad","name":"Reject Bad Input","type":"n8n-nodes-base.respondToWebhook","typeVersion":1.4,"position":[-80,180]
+    },
+    {
+      "parameters":{"jsCode":"const d=$getWorkflowStaticData('global'); d.seen=d.seen||{}; const p=$json.payload; const id=String(p.event_id).trim(); const duplicate=Boolean(d.seen[id]); if(!duplicate)d.seen[id]=new Date().toISOString(); return [{json:{duplicate,row:{event_id:id,name:String(p.name).trim(),email:String(p.email).trim().toLowerCase(),received_at:new Date().toISOString()}}}];"},
+      "id":"dedupe","name":"Duplicate Guard + Normalize","type":"n8n-nodes-base.code","typeVersion":2,"position":[-80,-100]
+    },
+    {
+      "parameters":{"conditions":{"options":{"caseSensitive":true,"typeValidation":"strict"},"conditions":[{"leftValue":"={{$json.duplicate}}","rightValue":true,"operator":{"type":"boolean","operation":"true","singleValue":true}}],"combinator":"and"},"options":{}},
+      "id":"ifdup","name":"Duplicate?","type":"n8n-nodes-base.if","typeVersion":2.2,"position":[150,-100]
+    },
+    {
+      "parameters":{"respondWith":"json","responseBody":"={{ {status:'accepted',disposition:'duplicate_ignored'} }}","options":{"responseCode":200}},
+      "id":"dup","name":"Stop Duplicate","type":"n8n-nodes-base.respondToWebhook","typeVersion":1.4,"position":[390,40]
+    },
+    {
+      "parameters":{"assignments":{"assignments":[
+        {"id":"r1","name":"event_id","value":"={{$json.row.event_id}}","type":"string"},
+        {"id":"r2","name":"name","value":"={{$json.row.name}}","type":"string"},
+        {"id":"r3","name":"email","value":"={{$json.row.email}}","type":"string"},
+        {"id":"r4","name":"received_at","value":"={{$json.row.received_at}}","type":"string"},
+        {"id":"r5","name":"integration_boundary","value":"GOOGLE_SHEETS_WRITE_WITH_BUYER_CREDENTIAL","type":"string"}
+      ]},"options":{}},
+      "id":"sheetboundary","name":"Google Sheets Write Boundary","type":"n8n-nodes-base.set","typeVersion":3.4,"position":[390,-200]
+    },
+    {
+      "parameters":{"assignments":{"assignments":[
+        {"id":"n1","name":"notification","value":"={{ 'New validated event '+$json.event_id+' for '+$json.email }}","type":"string"},
+        {"id":"n2","name":"integration_boundary","value":"SLACK_OR_EMAIL_NOTIFY_WITH_BUYER_CREDENTIAL","type":"string"},
+        {"id":"n3","name":"failure_contract","value":"External write/notify failures must route to an operator-visible failure alert in the paid environment.","type":"string"}
+      ]},"options":{}},
+      "id":"notifyboundary","name":"Notification + Failure Contract","type":"n8n-nodes-base.set","typeVersion":3.4,"position":[620,-200]
+    },
+    {
+      "parameters":{"respondWith":"json","responseBody":"={{ {status:'accepted',disposition:'ready_for_live_integrations',event_id:$('Google Sheets Write Boundary').item.json.event_id} }}","options":{"responseCode":202}},
+      "id":"ok","name":"Respond","type":"n8n-nodes-base.respondToWebhook","typeVersion":1.4,"position":[850,-200]
+    }
+  ],
+  "connections":{
+    "Webhook":{"main":[[{"node":"Validate Input","type":"main","index":0}]]},
+    "Validate Input":{"main":[[{"node":"Valid?","type":"main","index":0}]]},
+    "Valid?":{"main":[[{"node":"Duplicate Guard + Normalize","type":"main","index":0}],[{"node":"Reject Bad Input","type":"main","index":0}]]},
+    "Duplicate Guard + Normalize":{"main":[[{"node":"Duplicate?","type":"main","index":0}]]},
+    "Duplicate?":{"main":[[{"node":"Stop Duplicate","type":"main","index":0}],[{"node":"Google Sheets Write Boundary","type":"main","index":0}]]},
+    "Google Sheets Write Boundary":{"main":[[{"node":"Notification + Failure Contract","type":"main","index":0}]]},
+    "Notification + Failure Contract":{"main":[[{"node":"Respond","type":"main","index":0}]]}
+  },
+  "pinData":{},"settings":{"executionOrder":"v1"},"active":false
+}
