@@ -1,0 +1,173 @@
+{
+  "name": "Reliable Lead Intake - Proof Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "reliable-lead-intake",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-1",
+      "name": "Webhook Intake",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-900, 0],
+      "webhookId": "reliable-lead-intake-demo"
+    },
+    {
+      "parameters": {
+        "jsCode": "const p = $json.body ?? $json;\nconst required = ['event_id','email','company','consent'];\nconst missing = required.filter(k => p[k] === undefined || p[k] === null || p[k] === '');\nconst emailOk = typeof p.email === 'string' && /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(p.email);\nconst valid = missing.length === 0 && emailOk && p.consent === true;\nreturn [{json:{valid, missing, normalized:{event_id:String(p.event_id||'').trim(), email:String(p.email||'').trim().toLowerCase(), company:String(p.company||'').trim(), consent:p.consent===true, payment_status:String(p.payment_status||'current'), approval_1:p.approval_1===true, approval_2:p.approval_2===true}}}];"
+      },
+      "id": "code-validate",
+      "name": "Validate + Normalize",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-680, 0]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "strict"},
+          "conditions": [{"id":"c1","leftValue":"={{ $json.valid }}","rightValue":true,"operator":{"type":"boolean","operation":"true","singleValue":true}}],
+          "combinator":"and"
+        },
+        "options": {}
+      },
+      "id": "if-valid",
+      "name": "Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [-450, 0]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { status: 'rejected', reason: 'validation_failed', missing: $json.missing } }}",
+        "options": {"responseCode": 400}
+      },
+      "id": "respond-invalid",
+      "name": "Reject Invalid",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [-200, 180]
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = $getWorkflowStaticData('global');\nd.seen = d.seen || {};\nconst e = $json.normalized.event_id;\nconst duplicate = Boolean(d.seen[e]);\nif (!duplicate) d.seen[e] = new Date().toISOString();\nreturn [{json:{...$json, duplicate, first_seen_at:d.seen[e]}}];"
+      },
+      "id": "code-idempotency",
+      "name": "Idempotency Gate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-210, -80]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "strict"},
+          "conditions": [{"id":"c2","leftValue":"={{ $json.duplicate }}","rightValue":true,"operator":{"type":"boolean","operation":"true","singleValue":true}}],
+          "combinator":"and"
+        },
+        "options": {}
+      },
+      "id": "if-duplicate",
+      "name": "Duplicate?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [20, -80]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { status: 'accepted', disposition: 'duplicate_ignored', event_id: $json.normalized.event_id } }}",
+        "options": {"responseCode": 200}
+      },
+      "id": "respond-duplicate",
+      "name": "Acknowledge Duplicate",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [250, 70]
+    },
+    {
+      "parameters": {
+        "jsCode": "const p=$json.normalized;\nconst paymentOk=p.payment_status==='current';\nconst approvalsOk=p.approval_1===true && p.approval_2===true;\nreturn [{json:{...$json, payment_ok:paymentOk, approvals_ok:approvalsOk, can_execute:paymentOk&&approvalsOk}}];"
+      },
+      "id": "code-policy",
+      "name": "Business Policy Gate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [250, -170]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "strict"},
+          "conditions": [{"id":"c3","leftValue":"={{ $json.can_execute }}","rightValue":true,"operator":{"type":"boolean","operation":"true","singleValue":true}}],
+          "combinator":"and"
+        },
+        "options": {}
+      },
+      "id": "if-policy",
+      "name": "Approved + Paid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [480, -170]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { status: 'accepted', disposition: 'held', event_id: $json.normalized.event_id, approvals_ok: $json.approvals_ok, payment_ok: $json.payment_ok } }}",
+        "options": {"responseCode": 202}
+      },
+      "id": "respond-held",
+      "name": "Hold Safely",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [720, -20]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {"id":"a1","name":"event_id","value":"={{ $json.normalized.event_id }}","type":"string"},
+            {"id":"a2","name":"status","value":"ready_for_side_effect","type":"string"},
+            {"id":"a3","name":"note","value":"Proof workflow stops before real external action; production build would place CRM/API action here with retry/backoff + error workflow.","type":"string"}
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-ready",
+      "name": "Side-Effect Boundary",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [720, -280]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { status: 'accepted', disposition: 'ready_for_side_effect', event_id: $json.event_id, note: $json.note } }}",
+        "options": {"responseCode": 202}
+      },
+      "id": "respond-ready",
+      "name": "Respond Ready",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [950, -280]
+    }
+  ],
+  "connections": {
+    "Webhook Intake": {"main":[[{"node":"Validate + Normalize","type":"main","index":0}]]},
+    "Validate + Normalize": {"main":[[{"node":"Valid?","type":"main","index":0}]]},
+    "Valid?": {"main":[[{"node":"Idempotency Gate","type":"main","index":0}],[{"node":"Reject Invalid","type":"main","index":0}]]},
+    "Idempotency Gate": {"main":[[{"node":"Duplicate?","type":"main","index":0}]]},
+    "Duplicate?": {"main":[[{"node":"Acknowledge Duplicate","type":"main","index":0}],[{"node":"Business Policy Gate","type":"main","index":0}]]},
+    "Business Policy Gate": {"main":[[{"node":"Approved + Paid?","type":"main","index":0}]]},
+    "Approved + Paid?": {"main":[[{"node":"Side-Effect Boundary","type":"main","index":0}],[{"node":"Hold Safely","type":"main","index":0}]]},
+    "Side-Effect Boundary": {"main":[[{"node":"Respond Ready","type":"main","index":0}]]}
+  },
+  "pinData": {},
+  "settings": {"executionOrder":"v1"},
+  "active": false,
+  "versionId": "36b7d827-7b6b-4f75-bdf5-778e4d5f9660"
+}
