@@ -1,21 +1,43 @@
 # WhatsApp Lead Qualification + Human Handoff Proof
 
-Self-directed portfolio proof. Not client production history.
+Self-directed portfolio proof. **Not client production history.**
 
-This example demonstrates a reliability-first WhatsApp-style automation pattern for service businesses and agency white-label work: webhook intake, receipt filtering, validation, idempotency, lead qualification, human handoff, CRM upsert, retry handling, audit logging, and safe replay.
+This is a runnable reliability-focused workflow simulator for the failure modes that repeatedly appear in paid n8n / CRM / WhatsApp automation briefs.
 
-## Acceptance tests
+## What it demonstrates
 
-- Duplicate message ID never creates a second downstream side effect.
-- Delivery/read receipt is ignored.
-- Missing sender or message ID is rejected before downstream writes.
-- Explicit human request routes to human handoff.
-- Low confidence routes to human handoff.
-- Human-owned conversation blocks automated follow-up.
-- Temporary API failure is retryable.
-- Permanent failure emits an operator-facing alert event.
-- Every branch emits a correlation ID and audit record.
+- webhook-style event intake
+- delivery/read receipt filtering
+- payload validation
+- deterministic idempotency
+- duplicate-side-effect prevention
+- lead intent classification
+- low-confidence / sensitive / explicit-human handoff
+- CRM-style upsert behavior
+- bounded retries for transient provider failures
+- operator alerts for permanent or exhausted failures
+- structured audit logging
+- safe replay behavior
 
-## Production notes
+## Run it
 
-A real deployment would use the customer's WhatsApp Business provider, CRM, and credential store. No secrets belong in exported workflow JSON. Consequential outbound messages should retain an approval/handoff boundary appropriate to the client's risk tolerance.
+```bash
+cd examples/whatsapp-human-handoff-proof
+python test_workflow.py
+```
+
+Current validation: **9/9 acceptance tests pass.**
+
+See [ACCEPTANCE_REPORT.md](./ACCEPTANCE_REPORT.md) for the tested behaviors and proof limitations.
+
+## Files
+
+- `workflow.py` — runnable workflow simulator
+- `test_workflow.py` — acceptance tests
+- `ACCEPTANCE_REPORT.md` — validation evidence and commercial relevance
+
+## Production boundary
+
+A real deployment would replace the in-memory CRM and messaging provider with the customer's approved WhatsApp Business provider, CRM/API, secure credential store, persistence layer, monitoring and deployment environment.
+
+No secrets belong in exported workflow files. Consequential outbound actions should preserve an explicit approval or handoff boundary appropriate to the client's risk tolerance.
