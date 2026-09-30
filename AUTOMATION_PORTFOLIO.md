@@ -27,7 +27,30 @@ Best fit:
 - agency white-label delivery
 - human-in-the-loop automation
 
-## 2) n8n Reliability Proof
+## 2) Content Engine Reliability Spike
+
+Path: `examples/content-engine-reliability-spike/`
+
+Demonstrates:
+- configuration-driven source registry
+- source enable/disable without pipeline edits
+- deterministic deduplication
+- required-field validation
+- run-level audit events
+- spend / token budget caps
+- deterministic quality gates
+- acceptance-test evidence
+
+Validation: **6/6 acceptance tests pass.**
+
+Best fit:
+- content automation
+- scheduled generation systems
+- RAG/content-pipeline preflight work
+- production hardening
+- stabilisation / observability discussions
+
+## 3) n8n Reliability Proof
 
 Path: `examples/n8n-reliability-proof/`
 
@@ -43,7 +66,7 @@ Best fit:
 - API/webhook hardening
 - white-label overflow
 
-## 3) Manufacturing Pilot
+## 4) Manufacturing Pilot
 
 Path: `examples/manufacturing-pilot/`
 
@@ -51,7 +74,7 @@ Focus:
 - bounded workflow proof for a manufacturing automation brief
 - representative inputs and acceptance-oriented thinking
 
-## 4) FRED Paid-Test Proof
+## 5) FRED Paid-Test Proof
 
 Path: `examples/fred-paid-test/`
 
